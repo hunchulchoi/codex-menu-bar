@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 const binaryPath = path.join(projectRoot, ".build", "release", "CodexMenuBar");
+const inputSvg = path.join(projectRoot, "assets", "icons", "idle.svg");
+const generatorScript = path.join(projectRoot, "scripts", "make-icns.swift");
 
 async function fileExists(file) {
   try {
@@ -61,12 +63,29 @@ async function main() {
   }
 
   const macosDir = path.join(appBundlePath, "Contents", "MacOS");
+  const resourcesDir = path.join(appBundlePath, "Contents", "Resources");
   await fs.mkdir(macosDir, { recursive: true });
+  await fs.mkdir(resourcesDir, { recursive: true });
 
   // Copy binary
   await fs.copyFile(binaryPath, path.join(macosDir, "CodexMenuBar"));
   // Make binary executable
   await fs.chmod(path.join(macosDir, "CodexMenuBar"), 0o755);
+
+  // Compile & Copy AppIcon.icns from idle.svg
+  if (await fileExists(inputSvg) && await fileExists(generatorScript)) {
+    console.log("Generating AppIcon.icns from assets/icons/idle.svg...");
+    const tempIcns = path.join(projectRoot, "AppIcon.icns");
+    try {
+      run("swift", [generatorScript, inputSvg, tempIcns]);
+      if (await fileExists(tempIcns)) {
+        await fs.rename(tempIcns, path.join(resourcesDir, "AppIcon.icns"));
+        console.log("AppIcon.icns successfully packaged.");
+      }
+    } catch (e) {
+      console.error("Failed to generate AppIcon.icns:", e);
+    }
+  }
 
   // Write Info.plist
   const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -75,6 +94,8 @@ async function main() {
 <dict>
     <key>CFBundleExecutable</key>
     <string>CodexMenuBar</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.codex.menubar</string>
     <key>CFBundleName</key>
@@ -82,7 +103,7 @@ async function main() {
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>1.0.1</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
@@ -95,17 +116,14 @@ async function main() {
   await fs.writeFile(path.join(appBundlePath, "Contents", "Info.plist"), plistContent);
 
   console.log("4. Registering CodexMenuBar as a macOS Login Item...");
-  // Remove existing login item first to avoid duplicates
   try {
     run("osascript", ["-e", 'tell application "System Events" to delete (every login item whose name is "CodexMenuBar")']);
   } catch (e) {
     // Ignore errors if it didn't exist
   }
-  // Add the new login item
   run("osascript", ["-e", `tell application "System Events" to make login item at end with properties {name:"CodexMenuBar", path:"${appBundlePath}", hidden:false}`]);
 
   console.log("5. Launching CodexMenuBar application...");
-  // Kill any existing running instance first (executable handles this too, but open -g is cleaner)
   try {
     run("killall", ["CodexMenuBar"]);
     // Wait for macOS to clean up process resources

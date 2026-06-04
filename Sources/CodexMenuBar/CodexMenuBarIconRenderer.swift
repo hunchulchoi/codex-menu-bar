@@ -219,115 +219,45 @@ final class CodexMenuBarIconRenderer {
         verticalOffset: CGFloat = 0
     ) {
         color.setStroke()
-        
-        // 1. Draw Spaceship Outer Body (Rocket)
-        let body = NSBezierPath()
-        body.move(to: CGPoint(x: 12, y: 3.5 + verticalOffset))
-        body.curve(
-            to: CGPoint(x: 15.5, y: 14.5 + verticalOffset),
-            controlPoint1: CGPoint(x: 14.8, y: 6.5 + verticalOffset),
-            controlPoint2: CGPoint(x: 15.5, y: 11.0 + verticalOffset)
+        let outline = NSBezierPath()
+        outline.move(to: CGPoint(x: 2, y: 13 + verticalOffset))
+        outline.curve(
+            to: CGPoint(x: 7, y: 10 + verticalOffset),
+            controlPoint1: CGPoint(x: 2, y: 11 + verticalOffset),
+            controlPoint2: CGPoint(x: 7, y: 10 + verticalOffset)
         )
-        body.curve(
-            to: CGPoint(x: 13.5, y: 16.0 + verticalOffset),
-            controlPoint1: CGPoint(x: 15.5, y: 15.5 + verticalOffset),
-            controlPoint2: CGPoint(x: 14.5, y: 16.0 + verticalOffset)
+        outline.curve(
+            to: CGPoint(x: 17, y: 10 + verticalOffset),
+            controlPoint1: CGPoint(x: 7, y: 5 + verticalOffset),
+            controlPoint2: CGPoint(x: 17, y: 5 + verticalOffset)
         )
-        body.line(to: CGPoint(x: 10.5, y: 16.0 + verticalOffset))
-        body.curve(
-            to: CGPoint(x: 8.5, y: 14.5 + verticalOffset),
-            controlPoint1: CGPoint(x: 9.5, y: 16.0 + verticalOffset),
-            controlPoint2: CGPoint(x: 8.5, y: 15.5 + verticalOffset)
+        outline.curve(
+            to: CGPoint(x: 22, y: 13 + verticalOffset),
+            controlPoint1: CGPoint(x: 17, y: 10 + verticalOffset),
+            controlPoint2: CGPoint(x: 22, y: 11 + verticalOffset)
         )
-        body.curve(
-            to: CGPoint(x: 12, y: 3.5 + verticalOffset),
-            controlPoint1: CGPoint(x: 8.5, y: 11.0 + verticalOffset),
-            controlPoint2: CGPoint(x: 9.2, y: 6.5 + verticalOffset)
+        outline.curve(
+            to: CGPoint(x: 2, y: 13 + verticalOffset),
+            controlPoint1: CGPoint(x: 22, y: 16.5 + verticalOffset),
+            controlPoint2: CGPoint(x: 2, y: 16.5 + verticalOffset)
         )
-        body.close()
-        body.lineWidth = strokeWidth
-        body.stroke()
+        outline.close()
+        outline.lineWidth = strokeWidth
+        outline.stroke()
 
-        // 2. Draw Left Wing/Fin
-        let leftFin = NSBezierPath()
-        leftFin.move(to: CGPoint(x: 9.2, y: 11.5 + verticalOffset))
-        leftFin.curve(
-            to: CGPoint(x: 5.5, y: 15.5 + verticalOffset),
-            controlPoint1: CGPoint(x: 7.2, y: 12.5 + verticalOffset),
-            controlPoint2: CGPoint(x: 5.5, y: 14.0 + verticalOffset)
+        let earLine = NSBezierPath()
+        earLine.move(to: CGPoint(x: 7, y: 10 + verticalOffset))
+        earLine.curve(
+            to: CGPoint(x: 17, y: 10 + verticalOffset),
+            controlPoint1: CGPoint(x: 9, y: 11.5 + verticalOffset),
+            controlPoint2: CGPoint(x: 15, y: 11.5 + verticalOffset)
         )
-        leftFin.line(to: CGPoint(x: 8.8, y: 15.0 + verticalOffset))
-        leftFin.lineWidth = strokeWidth
-        leftFin.stroke()
+        earLine.lineWidth = strokeWidth
+        earLine.stroke()
 
-        // 3. Draw Right Wing/Fin
-        let rightFin = NSBezierPath()
-        rightFin.move(to: CGPoint(x: 14.8, y: 11.5 + verticalOffset))
-        rightFin.curve(
-            to: CGPoint(x: 18.5, y: 15.5 + verticalOffset),
-            controlPoint1: CGPoint(x: 16.8, y: 12.5 + verticalOffset),
-            controlPoint2: CGPoint(x: 18.5, y: 14.0 + verticalOffset)
-        )
-        rightFin.line(to: CGPoint(x: 15.2, y: 15.0 + verticalOffset))
-        rightFin.lineWidth = strokeWidth
-        rightFin.stroke()
-
-        // 4. Draw Nozzle
-        let nozzle = NSBezierPath()
-        nozzle.move(to: CGPoint(x: 10.8, y: 16.0 + verticalOffset))
-        nozzle.line(to: CGPoint(x: 13.2, y: 16.0 + verticalOffset))
-        nozzle.line(to: CGPoint(x: 13.6, y: 17.5 + verticalOffset))
-        nozzle.line(to: CGPoint(x: 10.4, y: 17.5 + verticalOffset))
-        nozzle.close()
-        color.setFill()
-        nozzle.fill()
-
-        // 5. Draw animated thrust flame if running
-        if let frameIndex = dotFrameIndex {
-            let isRunning = (verticalOffset != 0)
-            if isRunning {
-                let flameHeight = [3.2, 5.0, 4.0, 5.8][frameIndex % 4]
-                
-                // Outer Flame (Orange)
-                let flame = NSBezierPath()
-                flame.move(to: CGPoint(x: 10.8, y: 17.5 + verticalOffset))
-                flame.curve(
-                    to: CGPoint(x: 12.0, y: 17.5 + flameHeight + verticalOffset),
-                    controlPoint1: CGPoint(x: 10.8, y: 17.5 + flameHeight * 0.4 + verticalOffset),
-                    controlPoint2: CGPoint(x: 11.5, y: 17.5 + flameHeight * 0.8 + verticalOffset)
-                )
-                flame.curve(
-                    to: CGPoint(x: 13.2, y: 17.5 + verticalOffset),
-                    controlPoint1: CGPoint(x: 12.5, y: 17.5 + flameHeight * 0.8 + verticalOffset),
-                    controlPoint2: CGPoint(x: 13.2, y: 17.5 + flameHeight * 0.4 + verticalOffset)
-                )
-                flame.close()
-                NSColor.systemOrange.withAlphaComponent(0.85).setFill()
-                flame.fill()
-
-                // Inner Flame (Yellow)
-                let innerFlameHeight = flameHeight * 0.6
-                let innerFlame = NSBezierPath()
-                innerFlame.move(to: CGPoint(x: 11.4, y: 17.5 + verticalOffset))
-                innerFlame.curve(
-                    to: CGPoint(x: 12.0, y: 17.5 + innerFlameHeight + verticalOffset),
-                    controlPoint1: CGPoint(x: 11.4, y: 17.5 + innerFlameHeight * 0.4 + verticalOffset),
-                    controlPoint2: CGPoint(x: 11.7, y: 17.5 + innerFlameHeight * 0.8 + verticalOffset)
-                )
-                innerFlame.curve(
-                    to: CGPoint(x: 12.6, y: 17.5 + verticalOffset),
-                    controlPoint1: CGPoint(x: 12.3, y: 17.5 + innerFlameHeight * 0.8 + verticalOffset),
-                    controlPoint2: CGPoint(x: 12.6, y: 17.5 + innerFlameHeight * 0.4 + verticalOffset)
-                )
-                innerFlame.close()
-                NSColor.systemYellow.setFill()
-                innerFlame.fill()
-            }
-        }
-
-        // 6. Draw status/navigation indicator lights (the three dots)
-        var dotOpacities: [CGFloat] = [1.0, 1.0, 1.0]
+        var dotOpacities: [CGFloat]
         if let dotFrameIndex {
+            dotOpacities = [1, 1, 1]
             if let blinkingDotIndex {
                 dotOpacities[blinkingDotIndex] = codexMenuBarBlinkOpacity(frameIndex: dotFrameIndex, phase: blinkingDotIndex)
             } else {
@@ -337,29 +267,13 @@ final class CodexMenuBarIconRenderer {
                     codexMenuBarBlinkOpacity(frameIndex: dotFrameIndex, phase: 2)
                 ]
             }
+        } else {
+            dotOpacities = [1, 1, 1]
         }
 
-        // Left wing dot
-        drawCircle(
-            center: CGPoint(x: 6.2, y: 14.5 + verticalOffset),
-            radius: 0.9,
-            color: color,
-            opacity: dotOpacities[0]
-        )
-        // Center cockpit window dot
-        drawCircle(
-            center: CGPoint(x: 12.0, y: 9.5 + verticalOffset),
-            radius: 1.3,
-            color: color,
-            opacity: dotOpacities[1]
-        )
-        // Right wing dot
-        drawCircle(
-            center: CGPoint(x: 17.8, y: 14.5 + verticalOffset),
-            radius: 0.9,
-            color: color,
-            opacity: dotOpacities[2]
-        )
+        drawCircle(center: CGPoint(x: 7, y: 14 + verticalOffset), radius: 1, color: color, opacity: dotOpacities[0])
+        drawCircle(center: CGPoint(x: 12, y: 14.5 + verticalOffset), radius: 1, color: color, opacity: dotOpacities[1])
+        drawCircle(center: CGPoint(x: 17, y: 14 + verticalOffset), radius: 1, color: color, opacity: dotOpacities[2])
     }
 
     private func drawCircle(center: CGPoint, radius: CGFloat, color: NSColor, opacity: CGFloat = 1) {

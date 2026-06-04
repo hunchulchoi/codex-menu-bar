@@ -1,13 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="24" fill="#111827"/>
-  <!-- Spaceship Rocket Body -->
-  <path d="M64 24c-12 28-16 48-16 68 0 4 3 8 7 8h18c4 0 7-4 7-8 0-20-4-40-16-68Z" fill="#F9FAFB"/>
-  <!-- Wings -->
-  <path d="M48 76c-16 6-22 18-22 24 0 2 2 4 4 4h18c-2-6-2-18 0-28Z" fill="#F9FAFB"/>
-  <path d="M80 76c16 6 22 18 22 24 0 2-2 4-4 4H80c2-6 2-18 0-28Z" fill="#F9FAFB"/>
-  <!-- Window -->
-  <circle cx="64" cy="56" r="10" fill="#22C55E"/>
-  <!-- Flame -->
-  <path d="M56 100c0 12 8 20 8 20s8-8 8-20H56Z" fill="#F59E0B"/>
-  <path d="M60 100c0 6 4 10 4 10s4-4 4-10h-8Z" fill="#EF4444"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M 2 13 C 2 11, 7 10, 7 10 C 7 5, 17 5, 17 10 C 17 10, 22 11, 22 13 C 22 16.5, 2 16.5, 2 13 Z" />
+  <path d="M 7 10 C 9 11.5, 15 11.5, 17 10" />
+  <circle cx="7" cy="14" r="1" fill="currentColor" stroke="none" />
+  <circle cx="12" cy="14.5" r="1" fill="currentColor" stroke="none" />
+  <circle cx="17" cy="14" r="1" fill="currentColor" stroke="none" />
 </svg>
