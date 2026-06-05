@@ -85,6 +85,8 @@ final class CodexMenuBarIconRenderer {
         weeklyUsagePercent: Double?,
         agActive: Bool = false,
         agStatus: String? = nil,
+        cursorActive: Bool = false,
+        cursorStatus: String? = nil,
         hasUpdate: Bool = false
     ) -> NSImage {
         let kind = codexMenuBarIconKind(status: status, isRecentlyCompleted: isRecentlyCompleted)
@@ -99,16 +101,26 @@ final class CodexMenuBarIconRenderer {
             effectiveAgStatus = nil
         }
         
+        let effectiveCursorStatus: String?
+        if let cursorStatus = cursorStatus, cursorStatus != "idle" {
+            effectiveCursorStatus = cursorStatus
+        } else if cursorActive {
+            effectiveCursorStatus = "running"
+        } else {
+            effectiveCursorStatus = nil
+        }
+        
         let hasAgDot = (effectiveAgStatus != nil)
+        let hasCursorDot = (effectiveCursorStatus != nil)
         let image = NSImage(size: Self.size)
-        image.isTemplate = !hasAgDot && !hasUpdate
+        image.isTemplate = !hasAgDot && !hasCursorDot && !hasUpdate
         image.lockFocus()
         defer { image.unlockFocus() }
 
         NSGraphicsContext.current?.shouldAntialias = true
         draw(
             kind: kind,
-            color: (hasAgDot || hasUpdate) ? NSColor.labelColor : color,
+            color: (hasAgDot || hasCursorDot || hasUpdate) ? NSColor.labelColor : color,
             frameIndex: frameIndex,
             fiveHourUsagePercent: fiveHourUsagePercent,
             weeklyUsagePercent: weeklyUsagePercent,
@@ -122,48 +134,58 @@ final class CodexMenuBarIconRenderer {
         if let effectiveAgStatus {
             drawAgStatusDot(agStatus: effectiveAgStatus, frameIndex: frameIndex)
         }
+        
+        if let effectiveCursorStatus {
+            drawCursorStatusDot(cursorStatus: effectiveCursorStatus, frameIndex: frameIndex)
+        }
 
         return image
     }
 
     /// AGY 상태에 따른 LED 인디케이터 점을 이미지 우하단에 그립니다.
     private func drawAgStatusDot(agStatus: String, frameIndex: Int) {
-        // Determine color and blinking behavior
+        drawDot(status: agStatus, frameIndex: frameIndex, defaultColor: .systemPurple, offset: 0)
+    }
+    
+    /// Cursor 상태에 따른 LED 인디케이터 점을 AGY 왼쪽에 그립니다.
+    private func drawCursorStatusDot(cursorStatus: String, frameIndex: Int) {
+        drawDot(status: cursorStatus, frameIndex: frameIndex, defaultColor: .systemTeal, offset: 6.0)
+    }
+
+    private func drawDot(status: String, frameIndex: Int, defaultColor: NSColor, offset: CGFloat) {
         let dotColor: NSColor
         var shouldBlink = false
 
-        switch agStatus.lowercased() {
+        switch status.lowercased() {
         case "awaiting approval", "approval_required":
-            dotColor = NSColor.systemOrange // Amber/Yellow
+            dotColor = NSColor.systemOrange
             shouldBlink = true
-        case "completed", "complete", "done":
+          case "completed", "complete", "done":
             dotColor = NSColor.systemGreen
         case "running", "thinking", "working":
-            dotColor = NSColor.systemPurple
+            dotColor = defaultColor
         case "error", "failed":
             dotColor = NSColor.systemRed
         default:
-            dotColor = NSColor.systemPurple
+            dotColor = defaultColor
         }
 
         if shouldBlink && (frameIndex % 2 == 0) {
-            return // Skip drawing the dot on even frames to create a blinking effect
+            return
         }
 
         let dotRadius: CGFloat = 2.5
-        let dotCenter = CGPoint(x: Self.size.width - dotRadius - 0.5, y: dotRadius + 0.5)
+        let dotCenter = CGPoint(x: Self.size.width - dotRadius - 0.5 - offset, y: dotRadius + 0.5)
         let rect = CGRect(
             x: dotCenter.x - dotRadius,
             y: dotCenter.y - dotRadius,
             width: dotRadius * 2,
             height: dotRadius * 2
         )
-        // 배경 테두리 (흰색 링) — 다크/라이트 모두 명확하게 보이도록
         let ringPath = NSBezierPath(ovalIn: rect.insetBy(dx: -1, dy: -1))
         NSColor.controlBackgroundColor.setFill()
         ringPath.fill()
 
-        // 컬러 점
         let dotPath = NSBezierPath(ovalIn: rect)
         dotColor.setFill()
         dotPath.fill()
