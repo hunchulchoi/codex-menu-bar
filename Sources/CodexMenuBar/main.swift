@@ -35,6 +35,7 @@ struct AppSettings: Codable {
     var pollIntervalSeconds: TimeInterval
     var weeklyLimitText: String?
     var fiveHourLimitText: String?
+    var autoUpdateEnabled: Bool?
 
     static func defaults() -> AppSettings {
         AppSettings(
@@ -43,7 +44,8 @@ struct AppSettings: Codable {
             activeWindowSeconds: envTimeInterval("CODEX_MENU_BAR_ACTIVE_WINDOW_SECONDS", defaultValue: 4, minimum: 1),
             pollIntervalSeconds: envTimeInterval("CODEX_MENU_BAR_POLL_INTERVAL_SECONDS", defaultValue: 0.8, minimum: 0.25),
             weeklyLimitText: ProcessInfo.processInfo.environment["CODEX_MENU_BAR_WEEKLY_LIMIT"],
-            fiveHourLimitText: ProcessInfo.processInfo.environment["CODEX_MENU_BAR_FIVE_HOUR_LIMIT"]
+            fiveHourLimitText: ProcessInfo.processInfo.environment["CODEX_MENU_BAR_FIVE_HOUR_LIMIT"],
+            autoUpdateEnabled: true
         )
     }
 
@@ -54,7 +56,8 @@ struct AppSettings: Codable {
             activeWindowSeconds: max(1, activeWindowSeconds),
             pollIntervalSeconds: max(0.25, pollIntervalSeconds),
             weeklyLimitText: cleanText(weeklyLimitText),
-            fiveHourLimitText: cleanText(fiveHourLimitText)
+            fiveHourLimitText: cleanText(fiveHourLimitText),
+            autoUpdateEnabled: autoUpdateEnabled ?? true
         )
     }
 
@@ -1370,6 +1373,16 @@ private final class StatusPopupViewController: NSViewController {
     }
 }
 
+private struct GitHubRelease: Decodable {
+    let tag_name: String
+    let assets: [GitHubAsset]
+}
+
+private struct GitHubAsset: Decodable {
+    let name: String
+    let browser_download_url: String
+}
+
 @MainActor
 final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -1394,6 +1407,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var autoWatchCheckbox: NSButton?
     private var agWatchCheckbox: NSButton?
+    private var autoUpdateCheckbox: NSButton?
     private var activeWindowField: NSTextField?
     private var pollIntervalField: NSTextField?
     private var weeklyLimitField: NSTextField?
@@ -1406,6 +1420,11 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     private var frameIndex = 0
     private var animationTimer: Timer?
     private var attentionAcknowledgedAt: Date?
+    private var isCheckingForUpdates = false
+    private var isDownloadingUpdate = false
+    private var availableUpdateVersion: String?
+    private var availableUpdateURL: URL?
+    private var updateCheckTimer: Timer?
 
     // MARK: - Antigravity
     private var currentAntigravitySnapshot = AntigravityActivitySnapshot.empty
@@ -1484,6 +1503,19 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         refresh()
         scheduleTimer()
         scheduleAnimationTimerIfNeeded()
+
+        // Schedule background update check 5 seconds after launch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { [weak self] in
+            Task { @MainActor in
+                self?.checkForUpdates(isUserInitiated: false)
+            }
+        }
+        // Schedule background update check every 12 hours
+        updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 12 * 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkForUpdates(isUserInitiated: false)
+            }
+        }
     }
 
     private func scheduleTimer() {
@@ -1517,6 +1549,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        updateCheckTimer?.invalidate()
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         releaseSingleInstanceLock()
     }
@@ -1601,8 +1634,10 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))         // 17
         menu.addItem(NSMenuItem(title: "Open Status File", action: #selector(openStatusFile), keyEquivalent: "o")) // 18
         menu.addItem(NSMenuItem(title: "Reveal Status Folder", action: #selector(revealStatusFolder), keyEquivalent: "r")) // 19
-        menu.addItem(NSMenuItem(title: "Restart", action: #selector(restart), keyEquivalent: "R")) // 20
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))       // 21
+        menu.addItem(NSMenuItem.separator())                                                         // 20
+        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdatesManually), keyEquivalent: "")) // 21
+        menu.addItem(NSMenuItem(title: "Restart", action: #selector(restart), keyEquivalent: "R")) // 22
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))       // 23
         statusItem.menu = menu
     }
 
@@ -2347,7 +2382,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 380),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -2356,19 +2391,25 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         window.isReleasedWhenClosed = false
         window.center()
 
-        let view = NSView(frame: window.contentView?.bounds ?? NSRect(x: 0, y: 0, width: 420, height: 340))
+        let view = NSView(frame: window.contentView?.bounds ?? NSRect(x: 0, y: 0, width: 420, height: 380))
 
         let checkbox = NSButton(checkboxWithTitle: "Auto watch Codex activity", target: nil, action: nil)
-        checkbox.frame = NSRect(x: 24, y: 286, width: 280, height: 24)
+        checkbox.frame = NSRect(x: 24, y: 326, width: 280, height: 24)
         checkbox.state = settings.autoWatchEnabled ? .on : .off
         view.addSubview(checkbox)
         autoWatchCheckbox = checkbox
 
         let agCheckbox = NSButton(checkboxWithTitle: "Auto watch Antigravity activity", target: nil, action: nil)
-        agCheckbox.frame = NSRect(x: 24, y: 256, width: 280, height: 24)
+        agCheckbox.frame = NSRect(x: 24, y: 296, width: 280, height: 24)
         agCheckbox.state = settings.antigravityWatchEnabled ? .on : .off
         view.addSubview(agCheckbox)
         agWatchCheckbox = agCheckbox
+
+        let updateCheckbox = NSButton(checkboxWithTitle: "Auto check for updates", target: nil, action: nil)
+        updateCheckbox.frame = NSRect(x: 24, y: 266, width: 280, height: 24)
+        updateCheckbox.state = (settings.autoUpdateEnabled ?? true) ? .on : .off
+        view.addSubview(updateCheckbox)
+        autoUpdateCheckbox = updateCheckbox
 
         let activeLabel = NSTextField(labelWithString: "Active window seconds")
         activeLabel.frame = NSRect(x: 24, y: 218, width: 170, height: 20)
@@ -2444,7 +2485,8 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             activeWindowSeconds: active,
             pollIntervalSeconds: poll,
             weeklyLimitText: weeklyLimitField?.stringValue,
-            fiveHourLimitText: fiveHourLimitField?.stringValue
+            fiveHourLimitText: fiveHourLimitField?.stringValue,
+            autoUpdateEnabled: autoUpdateCheckbox?.state == .on
         ).sanitized()
         writeSettings()
         scheduleTimer()
@@ -2456,6 +2498,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         settings = AppSettings.defaults()
         autoWatchCheckbox?.state = settings.autoWatchEnabled ? .on : .off
         agWatchCheckbox?.state = settings.antigravityWatchEnabled ? .on : .off
+        autoUpdateCheckbox?.state = (settings.autoUpdateEnabled ?? true) ? .on : .off
         activeWindowField?.stringValue = formatSeconds(settings.activeWindowSeconds)
         pollIntervalField?.stringValue = formatSeconds(settings.pollIntervalSeconds)
         weeklyLimitField?.stringValue = settings.weeklyLimitText ?? ""
@@ -2523,6 +2566,155 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         alert.informativeText = "Codex Menu Bar could not start a new process."
         alert.alertStyle = .warning
         alert.runModal()
+    }
+
+    @objc private func checkForUpdatesManually() {
+        checkForUpdates(isUserInitiated: true)
+    }
+
+    private func checkForUpdates(isUserInitiated: Bool) {
+        if !isUserInitiated && !(settings.autoUpdateEnabled ?? true) {
+            return
+        }
+
+        guard !isCheckingForUpdates && !isDownloadingUpdate else { return }
+        isCheckingForUpdates = true
+
+        if isUserInitiated {
+            updateMenuItemTitle("Checking for Updates...")
+        }
+
+        let url = URL(string: "https://api.github.com/repos/hunchulchoi/codex-menu-bar/releases/latest")!
+        var request = URLRequest(url: url)
+        request.setValue("CodexMenuBar", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 10.0
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.isCheckingForUpdates = false
+                
+                guard let data, error == nil,
+                      let release = try? JSONDecoder().decode(GitHubRelease.self, from: data) else {
+                    self.updateMenuItemTitle("Check for Updates...")
+                    if isUserInitiated {
+                        self.showAlert(title: "Connection Failed", message: "Could not connect to GitHub to check for updates.")
+                    }
+                    return
+                }
+
+                let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+                let tagVersion = release.tag_name.hasPrefix("v") ? String(release.tag_name.dropFirst()) : release.tag_name
+
+                if tagVersion.compare(currentVersion, options: .numeric) == .orderedDescending {
+                    if let dmgAsset = release.assets.first(where: { $0.name.hasSuffix(".dmg") }),
+                       let downloadURL = URL(string: dmgAsset.browser_download_url) {
+                        self.availableUpdateVersion = release.tag_name
+                        self.availableUpdateURL = downloadURL
+                        self.updateMenuItemTitle("Update to \(release.tag_name) (Available)")
+                        
+                        if isUserInitiated {
+                            self.promptToUpdate(version: release.tag_name, url: downloadURL)
+                        }
+                        return
+                    }
+                }
+
+                self.updateMenuItemTitle("Check for Updates...")
+                if isUserInitiated {
+                    self.showAlert(title: "Up to Date", message: "You are running the latest version (\(currentVersion)).")
+                }
+            }
+        }.resume()
+    }
+
+    private func updateMenuItemTitle(_ title: String) {
+        guard let menu = statusItem.menu, menu.numberOfItems > 21 else { return }
+        menu.item(at: 21)?.title = title
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .informational
+        alert.runModal()
+    }
+
+    private func promptToUpdate(version: String, url: URL) {
+        let alert = NSAlert()
+        alert.messageText = "Update Available"
+        alert.informativeText = "A new version (\(version)) is available. Would you like to download and install it now?"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Download & Install")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            downloadAndInstallUpdate(url: url)
+        }
+    }
+
+    private func downloadAndInstallUpdate(url: URL) {
+        isDownloadingUpdate = true
+        updateMenuItemTitle("Downloading Update...")
+
+        URLSession.shared.downloadTask(with: url) { [weak self] tempURL, response, error in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.isDownloadingUpdate = false
+                self.updateMenuItemTitle("Check for Updates...")
+
+                guard let tempURL, error == nil else {
+                    self.showAlert(title: "Download Failed", message: "Failed to download the update package.")
+                    return
+                }
+
+                let fileManager = FileManager.default
+                let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
+                let destinationURL = cacheDir.appendingPathComponent("CodexMenuBarUpdate.dmg")
+                
+                try? fileManager.removeItem(at: destinationURL)
+                do {
+                    try fileManager.moveItem(at: tempURL, to: destinationURL)
+                    self.installUpdate(dmgURL: destinationURL)
+                } catch {
+                    self.showAlert(title: "Installation Failed", message: "Failed to prepare the downloaded update for installation.")
+                }
+            }
+        }.resume()
+    }
+
+    private func installUpdate(dmgURL: URL) {
+        let targetAppPath = Bundle.main.bundlePath
+        let dmgPath = dmgURL.path
+        let mountPoint = "/tmp/CodexMenuBarMount"
+        
+        let installScript = """
+        (
+          sleep 1.0
+          hdiutil detach -force "\(mountPoint)" 2>/dev/null || true
+          hdiutil attach -nobrowse -readonly -mountpoint "\(mountPoint)" "\(dmgPath)"
+          if [ -d "\(mountPoint)/CodexMenuBar.app" ]; then
+            rm -rf "\(targetAppPath)"
+            cp -R "\(mountPoint)/CodexMenuBar.app" "\(targetAppPath)"
+          fi
+          hdiutil detach "\(mountPoint)"
+          rm -f "\(dmgPath)"
+          open "\(targetAppPath)"
+        ) &
+        """
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", installScript]
+        
+        do {
+            try process.run()
+            releaseSingleInstanceLock()
+            NSApp.terminate(nil)
+        } catch {
+            showAlert(title: "Update Failed", message: "Could not launch the auto-updater installer script.")
+        }
     }
 
     private func ensureStatusDirectory() {
