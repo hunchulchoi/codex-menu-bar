@@ -1751,44 +1751,46 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.autoenablesItems = false
         
+        menu.addItem(NSMenuItem(title: "🔄 Check for Updates...", action: #selector(checkForUpdatesManually), keyEquivalent: "")) // 0
+        menu.addItem(NSMenuItem.separator())                                                         // 1
+        
         let headerItem = NSMenuItem(title: "Codex Menu Bar", action: #selector(openGitHub), keyEquivalent: "")
         headerItem.isEnabled = true
-        menu.addItem(headerItem)                                                                     // 0
-        menu.addItem(NSMenuItem.separator())                                                         // 1
+        menu.addItem(headerItem)                                                                     // 2
+        menu.addItem(NSMenuItem.separator())                                                         // 3
         
         let summaryItem = NSMenuItem()
         summaryItem.isEnabled = false
         summaryItem.view = usageSummaryView
-        menu.addItem(summaryItem)                                                                    // 2
+        menu.addItem(summaryItem)                                                                    // 4
         
-        menu.addItem(NSMenuItem(title: "Codex Status: -", action: nil, keyEquivalent: ""))         // 3
-        menu.addItem(NSMenuItem(title: "Detail: -", action: nil, keyEquivalent: ""))               // 4
-        menu.addItem(NSMenuItem(title: "Source: -", action: nil, keyEquivalent: ""))               // 5
-        menu.addItem(NSMenuItem(title: "Last Activity: -", action: nil, keyEquivalent: ""))        // 6
-        menu.addItem(NSMenuItem(title: "Updated: -", action: nil, keyEquivalent: ""))              // 7
-        menu.addItem(NSMenuItem.separator())                                                         // 8
-        menu.addItem(NSMenuItem(title: "5-hour limit: -", action: nil, keyEquivalent: ""))         // 9
-        menu.addItem(NSMenuItem(title: "Weekly limit: -", action: nil, keyEquivalent: ""))         // 10
-        menu.addItem(NSMenuItem(title: "Limit source: -", action: nil, keyEquivalent: ""))         // 11
-        menu.addItem(NSMenuItem.separator())                                                         // 12
-        menu.addItem(NSMenuItem(title: "AGY: -", action: nil, keyEquivalent: ""))                  // 13
-        menu.addItem(NSMenuItem(title: "AGY Activity: -", action: nil, keyEquivalent: ""))         // 14
-        menu.addItem(NSMenuItem(title: "AGY Conversations: -", action: nil, keyEquivalent: ""))    // 15
-        menu.addItem(NSMenuItem.separator())                                                         // 16
+        menu.addItem(NSMenuItem(title: "Codex Status: -", action: nil, keyEquivalent: ""))         // 5
+        menu.addItem(NSMenuItem(title: "Detail: -", action: nil, keyEquivalent: ""))               // 6
+        menu.addItem(NSMenuItem(title: "Source: -", action: nil, keyEquivalent: ""))               // 7
+        menu.addItem(NSMenuItem(title: "Last Activity: -", action: nil, keyEquivalent: ""))        // 8
+        menu.addItem(NSMenuItem(title: "Updated: -", action: nil, keyEquivalent: ""))              // 9
+        menu.addItem(NSMenuItem.separator())                                                         // 10
+        menu.addItem(NSMenuItem(title: "5-hour limit: -", action: nil, keyEquivalent: ""))         // 11
+        menu.addItem(NSMenuItem(title: "Weekly limit: -", action: nil, keyEquivalent: ""))         // 12
+        menu.addItem(NSMenuItem(title: "Limit source: -", action: nil, keyEquivalent: ""))         // 13
+        menu.addItem(NSMenuItem.separator())                                                         // 14
+        menu.addItem(NSMenuItem(title: "AGY: -", action: nil, keyEquivalent: ""))                  // 15
+        menu.addItem(NSMenuItem(title: "AGY Activity: -", action: nil, keyEquivalent: ""))         // 16
+        menu.addItem(NSMenuItem(title: "AGY Conversations: -", action: nil, keyEquivalent: ""))    // 17
+        menu.addItem(NSMenuItem.separator())                                                         // 18
         
-        menu.addItem(NSMenuItem(title: "Cursor: -", action: nil, keyEquivalent: ""))               // 17
-        menu.addItem(NSMenuItem(title: "Cursor Activity: -", action: nil, keyEquivalent: ""))      // 18
-        menu.addItem(NSMenuItem(title: "Cursor Quota: -", action: nil, keyEquivalent: ""))         // 19
-        menu.addItem(NSMenuItem.separator())                                                         // 20
+        menu.addItem(NSMenuItem(title: "Cursor: -", action: nil, keyEquivalent: ""))               // 19
+        menu.addItem(NSMenuItem(title: "Cursor Activity: -", action: nil, keyEquivalent: ""))      // 20
+        menu.addItem(NSMenuItem(title: "Cursor Quota: -", action: nil, keyEquivalent: ""))         // 21
+        menu.addItem(NSMenuItem.separator())                                                         // 22
         
-        menu.addItem(NSMenuItem(title: "GitHub Repository...", action: #selector(openGitHub), keyEquivalent: "")) // 21
-        menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))         // 22
-        menu.addItem(NSMenuItem(title: "Open Status File", action: #selector(openStatusFile), keyEquivalent: "o")) // 23
-        menu.addItem(NSMenuItem(title: "Reveal Status Folder", action: #selector(revealStatusFolder), keyEquivalent: "r")) // 24
-        menu.addItem(NSMenuItem.separator())                                                         // 25
-        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdatesManually), keyEquivalent: "")) // 26
-        menu.addItem(NSMenuItem(title: "Restart", action: #selector(restart), keyEquivalent: "R")) // 27
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))       // 28
+        menu.addItem(NSMenuItem(title: "GitHub Repository...", action: #selector(openGitHub), keyEquivalent: "")) // 23
+        menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))         // 24
+        menu.addItem(NSMenuItem(title: "Open Status File", action: #selector(openStatusFile), keyEquivalent: "o")) // 25
+        menu.addItem(NSMenuItem(title: "Reveal Status Folder", action: #selector(revealStatusFolder), keyEquivalent: "r")) // 26
+        menu.addItem(NSMenuItem.separator())                                                         // 27
+        menu.addItem(NSMenuItem(title: "Restart", action: #selector(restart), keyEquivalent: "R")) // 28
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))       // 29
         statusItem.menu = menu
     }
 
@@ -2288,9 +2290,9 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             baseHeaderTitle = "Codex Menu Bar"
         }
         let headerTitle = "\(baseHeaderTitle) v\(currentVersion) (\(buildDate)) by choihunchul"
-        menu.item(at: 0)?.title = headerTitle
+        menu.item(at: 2)?.title = headerTitle
 
-        if let summaryItem = menu.item(at: 2) {
+        if let summaryItem = menu.item(at: 4) {
             summaryItem.view = usageSummaryView
         }
 
@@ -2323,14 +2325,14 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             now: now
         )
 
-        menu.item(at: 3)?.title = "Codex Status: \(completionText)"
-        menu.item(at: 4)?.title = "Detail: \(detail)"
-        menu.item(at: 5)?.title = "Source: \(effectiveSource)"
-        menu.item(at: 6)?.title = "Last Activity: \(activity)"
-        menu.item(at: 7)?.title = "Updated: \(updated)"
-        menu.item(at: 9)?.title = "5-hour limit: \(limitDetailText(currentLimitState.primary, fallback: settings.fiveHourLimitText))"
-        menu.item(at: 10)?.title = "Weekly limit: \(limitDetailText(currentLimitState.secondary, fallback: settings.weeklyLimitText))"
-        menu.item(at: 11)?.title = "Limit source: \(currentLimitState.source)"
+        menu.item(at: 5)?.title = "Codex Status: \(completionText)"
+        menu.item(at: 6)?.title = "Detail: \(detail)"
+        menu.item(at: 7)?.title = "Source: \(effectiveSource)"
+        menu.item(at: 8)?.title = "Last Activity: \(activity)"
+        menu.item(at: 9)?.title = "Updated: \(updated)"
+        menu.item(at: 11)?.title = "5-hour limit: \(limitDetailText(currentLimitState.primary, fallback: settings.fiveHourLimitText))"
+        menu.item(at: 12)?.title = "Weekly limit: \(limitDetailText(currentLimitState.secondary, fallback: settings.weeklyLimitText))"
+        menu.item(at: 13)?.title = "Limit source: \(currentLimitState.source)"
 
         // AGY section
         if settings.antigravityWatchEnabled {
@@ -2351,10 +2353,10 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             } else {
                 agStatusText = "○ No activity detected"
             }
-            menu.item(at: 13)?.title = "AGY: \(agStatusText)"
+            menu.item(at: 15)?.title = "AGY: \(agStatusText)"
             
             if let detail = agPayload?.detail, !detail.isEmpty, agStatus != "idle" {
-                menu.item(at: 14)?.title = "AGY Detail: \(detail)"
+                menu.item(at: 16)?.title = "AGY Detail: \(detail)"
             } else {
                 let agActivityText: String
                 if let lastDate = currentAntigravitySnapshot.lastActivityDate {
@@ -2363,19 +2365,19 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
                 } else {
                     agActivityText = "-"
                 }
-                menu.item(at: 14)?.title = "AGY Activity: \(agActivityText) ago"
+                menu.item(at: 16)?.title = "AGY Activity: \(agActivityText) ago"
             }
-            menu.item(at: 15)?.title = "AGY Conversations: \(currentAntigravitySnapshot.totalConversationCount) total"
+            menu.item(at: 17)?.title = "AGY Conversations: \(currentAntigravitySnapshot.totalConversationCount) total"
         } else {
-            menu.item(at: 13)?.title = "AGY: disabled"
-            menu.item(at: 14)?.title = "AGY Activity: -"
-            menu.item(at: 15)?.title = "AGY Conversations: -"
+            menu.item(at: 15)?.title = "AGY: disabled"
+            menu.item(at: 16)?.title = "AGY Activity: -"
+            menu.item(at: 17)?.title = "AGY Conversations: -"
         }
 
         // Cursor section
         if settings.cursorWatchEnabled {
             let cursorStatusText = cursorActive ? "● Running" : "○ Idle"
-            menu.item(at: 17)?.title = "Cursor: \(cursorStatusText)"
+            menu.item(at: 19)?.title = "Cursor: \(cursorStatusText)"
             
             let cursorActivityText: String
             if let lastDate = latestCursorActivity {
@@ -2384,7 +2386,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             } else {
                 cursorActivityText = "-"
             }
-            menu.item(at: 18)?.title = "Cursor Activity: \(cursorActivityText)"
+            menu.item(at: 20)?.title = "Cursor Activity: \(cursorActivityText)"
             
             let quotaText: String
             if currentCursorLimitState.source == "live" {
@@ -2399,11 +2401,11 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             } else {
                 quotaText = "No quota data"
             }
-            menu.item(at: 19)?.title = "Cursor Quota: \(quotaText)"
+            menu.item(at: 21)?.title = "Cursor Quota: \(quotaText)"
         } else {
-            menu.item(at: 17)?.title = "Cursor: disabled"
-            menu.item(at: 18)?.title = "Cursor Activity: -"
-            menu.item(at: 19)?.title = "Cursor Quota: -"
+            menu.item(at: 19)?.title = "Cursor: disabled"
+            menu.item(at: 20)?.title = "Cursor Activity: -"
+            menu.item(at: 21)?.title = "Cursor Quota: -"
         }
     }
 
@@ -2927,8 +2929,16 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     private func updateMenuItemTitle(_ title: String) {
-        guard let menu = statusItem.menu, menu.numberOfItems > 26 else { return }
-        menu.item(at: 26)?.title = title
+        guard let menu = statusItem.menu, menu.numberOfItems > 0 else { return }
+        let decoratedTitle: String
+        if title.contains("Available") {
+            decoratedTitle = "✨ 🚀 \(title) 🚀 ✨"
+        } else if title.contains("Check for Updates") {
+            decoratedTitle = "🔄 Check for Updates..."
+        } else {
+            decoratedTitle = title
+        }
+        menu.item(at: 0)?.title = decoratedTitle
     }
 
     private func showAlert(title: String, message: String) {
