@@ -623,6 +623,7 @@ private final class UsageSummaryCardView: NSView {
         case antigravity = 2
     }
     private var selectedTab: Tab = .codex
+    private var activeTabs: [Tab] = [.codex, .cursor, .antigravity]
 
     // MARK: - Container
     private let surfaceView = NSView(frame: .zero)
@@ -743,10 +744,55 @@ private final class UsageSummaryCardView: NSView {
     }
 
     @objc private func tabChanged(_ sender: NSSegmentedControl) {
-        selectedTab = Tab(rawValue: sender.selectedSegment) ?? .codex
+        let index = sender.selectedSegment
+        if index >= 0 && index < activeTabs.count {
+            selectedTab = activeTabs[index]
+        } else {
+            selectedTab = .codex
+        }
+        
+        let cursorEnabled = activeTabs.contains(.cursor)
+        let antigravityEnabled = activeTabs.contains(.antigravity)
+        
         codexPanel.isHidden = selectedTab != .codex
-        cursorPanel.isHidden = selectedTab != .cursor
-        agPanel.isHidden = selectedTab != .antigravity
+        cursorPanel.isHidden = selectedTab != .cursor || !cursorEnabled
+        agPanel.isHidden = selectedTab != .antigravity || !antigravityEnabled
+        needsLayout = true
+    }
+
+    func configureTabs(antigravityEnabled: Bool, cursorEnabled: Bool) {
+        var segments: [(String, Tab)] = [("Codex", .codex)]
+        if cursorEnabled {
+            segments.append(("Cursor", .cursor))
+        }
+        if antigravityEnabled {
+            segments.append(("AGY", .antigravity))
+        }
+        
+        self.activeTabs = segments.map { $0.1 }
+        
+        tabControl.segmentCount = segments.count
+        for (index, (label, _)) in segments.enumerated() {
+            tabControl.setLabel(label, forSegment: index)
+        }
+        
+        if !activeTabs.contains(selectedTab) {
+            selectedTab = .codex
+        }
+        
+        if let newIndex = activeTabs.firstIndex(of: selectedTab) {
+            tabControl.selectedSegment = newIndex
+        } else {
+            tabControl.selectedSegment = 0
+            selectedTab = .codex
+        }
+        
+        codexPanel.isHidden = selectedTab != .codex
+        cursorPanel.isHidden = selectedTab != .cursor || !cursorEnabled
+        agPanel.isHidden = selectedTab != .antigravity || !antigravityEnabled
+        
+        tabControl.isHidden = (segments.count <= 1)
+        
         needsLayout = true
     }
 
@@ -968,7 +1014,12 @@ private final class UsageSummaryCardView: NSView {
         let tabY = surfaceView.bounds.height - inset - tabHeight
         tabControl.frame = NSRect(x: inset, y: tabY, width: surfaceView.bounds.width - inset * 2, height: tabHeight)
 
-        let panelTop = tabY - 8
+        let panelTop: CGFloat
+        if tabControl.isHidden {
+            panelTop = surfaceView.bounds.height - 8
+        } else {
+            panelTop = tabY - 8
+        }
         let panelHeight = panelTop
         let panelFrame = NSRect(x: 0, y: 0, width: surfaceView.bounds.width, height: panelHeight)
         codexPanel.frame = panelFrame
@@ -2296,6 +2347,11 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             summaryItem.view = usageSummaryView
         }
 
+        usageSummaryView.configureTabs(
+            antigravityEnabled: settings.antigravityWatchEnabled,
+            cursorEnabled: settings.cursorWatchEnabled
+        )
+
         usageSummaryView.update(
             elapsed: elapsedText(),
             tokens: tokenText(),
@@ -2334,8 +2390,14 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         menu.item(at: 12)?.title = "Weekly limit: \(limitDetailText(currentLimitState.secondary, fallback: settings.weeklyLimitText))"
         menu.item(at: 13)?.title = "Limit source: \(currentLimitState.source)"
 
-        // AGY section
-        if settings.antigravityWatchEnabled {
+        // AGY section visibility and update
+        let showAGY = settings.antigravityWatchEnabled
+        menu.item(at: 14)?.isHidden = !showAGY
+        menu.item(at: 15)?.isHidden = !showAGY
+        menu.item(at: 16)?.isHidden = !showAGY
+        menu.item(at: 17)?.isHidden = !showAGY
+
+        if showAGY {
             let agStatusText: String
             let agPayload = currentPayload?.antigravity
             let agStatus = agPayload?.status?.lowercased() ?? "idle"
@@ -2368,14 +2430,16 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
                 menu.item(at: 16)?.title = "AGY Activity: \(agActivityText) ago"
             }
             menu.item(at: 17)?.title = "AGY Conversations: \(currentAntigravitySnapshot.totalConversationCount) total"
-        } else {
-            menu.item(at: 15)?.title = "AGY: disabled"
-            menu.item(at: 16)?.title = "AGY Activity: -"
-            menu.item(at: 17)?.title = "AGY Conversations: -"
         }
 
-        // Cursor section
-        if settings.cursorWatchEnabled {
+        // Cursor section visibility and update
+        let showCursor = settings.cursorWatchEnabled
+        menu.item(at: 18)?.isHidden = !showCursor
+        menu.item(at: 19)?.isHidden = !showCursor
+        menu.item(at: 20)?.isHidden = !showCursor
+        menu.item(at: 21)?.isHidden = !showCursor
+
+        if showCursor {
             let cursorStatusText = cursorActive ? "● Running" : "○ Idle"
             menu.item(at: 19)?.title = "Cursor: \(cursorStatusText)"
             
@@ -2402,10 +2466,6 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
                 quotaText = "No quota data"
             }
             menu.item(at: 21)?.title = "Cursor Quota: \(quotaText)"
-        } else {
-            menu.item(at: 19)?.title = "Cursor: disabled"
-            menu.item(at: 20)?.title = "Cursor Activity: -"
-            menu.item(at: 21)?.title = "Cursor Quota: -"
         }
     }
 
