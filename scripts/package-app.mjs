@@ -75,6 +75,7 @@ async function main() {
     console.warn("SVG or icon generator script missing.");
   }
 
+  const buildDate = new Date().toISOString().slice(0, 10);
   // Write Info.plist
   const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -98,6 +99,8 @@ async function main() {
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>CFBuildDate</key>
+    <string>${buildDate}</string>
 </dict>
 </plist>
 `;

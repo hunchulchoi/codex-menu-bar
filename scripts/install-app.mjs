@@ -33,7 +33,9 @@ function run(command, args, options = {}) {
 }
 
 async function main() {
-  console.log("1. Building CodexMenuBar in release mode...");
+  const version = process.argv[2] || "1.0.5";
+  const buildDate = new Date().toISOString().slice(0, 10);
+  console.log(`Building version ${version} with build date ${buildDate}...`);
   run("swift", ["build", "-c", "release"], { cwd: projectRoot });
   if (!(await fileExists(binaryPath))) {
     throw new Error(`Build finished but binary not found at ${binaryPath}`);
@@ -103,13 +105,15 @@ async function main() {
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.1</string>
+    <string>${version}</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>CFBuildDate</key>
+    <string>${buildDate}</string>
 </dict>
 </plist>
 `;
