@@ -1,6 +1,6 @@
 # Codex Menu Bar
 
-Codex Menu Bar is a local Codex plugin plus a macOS menu bar companion app.
+Codex Menu Bar is a local Codex, Cursor, and Antigravity plugin plus a macOS menu bar companion app.
 
 ![Codex Menu Bar Screenshot](assets/screenshot.png)
 
@@ -13,6 +13,32 @@ The plugin exposes an MCP status bridge. The companion app watches `~/.codex-men
 - `Codex !` when something needs attention
 
 It also watches recent Codex local activity files under `~/.codex/`. If those files change in the last few seconds, the app automatically switches to the animated running state even when no MCP/CLI status update was sent.
+
+## Cursor & Antigravity Support
+
+The macOS menu bar app supports multi-agent and multi-editor status monitoring with dedicated LED status dots and usage panels:
+
+* **Cursor Editor Support**:
+  - **Activity Watcher**: Monitors user activity via `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb-wal` modifications, and checks background execution logs under `~/Library/Application Support/Cursor/logs/` for active Cursor Agent/Composer tasks.
+  - **LED Indicator**: Displays a **Teal LED dot** next to the main status icon, representing active agent or composer execution.
+  - **Usage Panel**: Displays a dedicated **Cursor Tab** in the status detail view showing your current billing period spend, token usage, and fast/slow GPT usage statistics. It retrieves these by reading your session token securely from Cursor's local storage and querying Cursor's dashboard APIs.
+* **Antigravity (AGY) Support**:
+  - **Activity Watcher**: Watches local activity files under `~/.gemini/antigravity/` to track agent operations.
+  - **LED Indicator**: Displays a **Purple LED dot** showing current agent task status.
+  - **Usage Panel**: Displays active/total conversation counts and agent statistics in the **AGY Tab**.
+* **Status Dot Indicators**:
+  - **Running/Thinking**: Solid Purple (AGY) / Teal (Cursor) dot.
+  - **Awaiting Approval**: Orange blinking dot.
+  - **Completed/Done**: Solid Green dot.
+  - **Error/Failed**: Solid Red dot.
+
+## Privacy & Local-First Philosophy
+
+This project is built with a strict **local-first and privacy-centric** design:
+
+* **Zero Data Collection**: We do not collect, store, or transmit any of your personal data, code, activity logs, or configurations to any telemetry or third-party analytics services.
+* **Completely Local Operation**: Status monitoring, activity log analysis, and state updates run entirely on your local machine.
+* **Direct LLM Communication Only**: Any API requests made by the app (e.g., retrieving live GPT usage limits or token statistics) are sent **directly** from your local machine to the official model provider endpoints (ChatGPT/Cursor dashboard APIs). There are no intermediary proxy servers, and your credentials or session tokens never leave your computer.
 
 ## Build The Menu Bar App
 
@@ -56,6 +82,8 @@ Auto watch is enabled by default.
 Open the menu bar item and choose `Settings...` to change:
 
 - Auto watch Codex activity
+- Auto watch Antigravity activity
+- Auto watch Cursor activity
 - Active window seconds
 - Poll interval seconds
 - Weekly limit
@@ -72,16 +100,22 @@ Environment variables can still set the defaults when no settings file exists:
 ```bash
 CODEX_MENU_BAR_ACTIVE_WINDOW_SECONDS=10 .build/release/CodexMenuBar
 CODEX_MENU_BAR_AUTO_WATCH=0 .build/release/CodexMenuBar
+CODEX_MENU_BAR_AGY_WATCH=0 .build/release/CodexMenuBar
+CODEX_MENU_BAR_CURSOR_WATCH=0 .build/release/CodexMenuBar
 CODEX_MENU_BAR_POLL_INTERVAL_SECONDS=1.5 .build/release/CodexMenuBar
 CODEX_MENU_BAR_WEEKLY_LIMIT="42% used, resets Mon" .build/release/CodexMenuBar
 CODEX_MENU_BAR_FIVE_HOUR_LIMIT="12 left, resets 17:30" .build/release/CodexMenuBar
 ```
 
-By default, the app checks these Codex state files by modification time:
+By default, the app checks these state files by modification time:
 
-- `~/.codex/state_5.sqlite-wal`
-- `~/.codex/state_5.sqlite`
-- `~/.codex/.codex-global-state.json`
+* **Codex**:
+  - `~/.codex/state_5.sqlite-wal`
+  - `~/.codex/state_5.sqlite`
+  - `~/.codex/.codex-global-state.json`
+* **Cursor**:
+  - `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb-wal` (monitors general editor activity)
+  - `~/Library/Application Support/Cursor/logs/` (recursively checks `anysphere.cursor-agent-exec` log files for active Cursor Agent/Composer execution)
 
 The log database is intentionally not watched by default because it can be noisy while Codex keeps background connections alive.
 
