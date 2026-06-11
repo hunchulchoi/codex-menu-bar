@@ -42,6 +42,15 @@ This project is built with a strict **local-first and privacy-centric** design:
 * **Completely Local Operation**: Status monitoring, activity log analysis, and state updates run entirely on your local machine.
 * **Direct LLM Communication Only**: Any API requests made by the app (e.g., retrieving live GPT usage limits or token statistics) are sent **directly** from your local machine to the official model provider endpoints (ChatGPT/Cursor dashboard APIs). There are no intermediary proxy servers, and your credentials or session tokens never leave your computer.
 
+## Installation via Homebrew
+
+You can install the macOS companion app directly via Homebrew Cask from the personal tap:
+
+```bash
+brew tap choihunchul/tap
+brew install --cask codex-menu-bar
+```
+
 ## Build The Menu Bar App
 
 ```bash

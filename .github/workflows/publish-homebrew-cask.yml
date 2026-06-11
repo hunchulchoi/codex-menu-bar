@@ -1,0 +1,97 @@
+name: Publish Homebrew Cask
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g., v1.0.8)'
+        required: true
+        default: 'v1.0.8'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    steps:
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'choihunchul/homebrew-tap'
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: 'homebrew-tap'
+
+      - name: Get latest release info
+        id: release_info
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.tag }}"
+          else
+            # Get latest release tag from API
+            TAG_NAME=$(curl -fsSL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/choihunchul/codex-menu-bar/releases/latest | jq -r .tag_name)
+          fi
+          
+          VERSION="${TAG_NAME#v}"
+          DMG_URL="https://github.com/choihunchul/codex-menu-bar/releases/download/${TAG_NAME}/CodexMenuBar.dmg"
+          
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "url=$DMG_URL" >> $GITHUB_OUTPUT
+          
+          # Download DMG and compute sha256
+          curl -fsSL -o CodexMenuBar.dmg "$DMG_URL"
+          SHA256=$(shasum -a 256 CodexMenuBar.dmg | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Update Cask file
+        run: |
+          CASK_PATH="homebrew-tap/Casks/codex-menu-bar.rb"
+          VERSION="${{ steps.release_info.outputs.version }}"
+          SHA256="${{ steps.release_info.outputs.sha256 }}"
+          
+          # Ensure Casks directory exists
+          mkdir -p homebrew-tap/Casks
+          
+          # Write the Cask file template
+          cat << 'EOF' > "$CASK_PATH"
+          cask "codex-menu-bar" do
+            version "VERSION_PLACEHOLDER"
+            sha256 "SHA256_PLACEHOLDER"
+
+            url "https://github.com/choihunchul/codex-menu-bar/releases/download/v#{version}/CodexMenuBar.dmg"
+            name "Codex Menu Bar"
+            desc "Local Codex, Cursor, and Antigravity plugin macOS companion app"
+            homepage "https://github.com/choihunchul/codex-menu-bar"
+
+            app "CodexMenuBar.app"
+
+            zap trash: [
+              "~/.codex-menu-bar",
+              "~/Library/Application Support/CodexMenuBar",
+            ]
+          end
+          EOF
+          
+          # Replace placeholders
+          sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" "$CASK_PATH"
+          sed -i "s/SHA256_PLACEHOLDER/$SHA256/g" "$CASK_PATH"
+
+      - name: Commit and Push changes
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/codex-menu-bar.rb
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "cask(codex-menu-bar): bump to ${{ steps.release_info.outputs.tag }}"
+            git push origin main
+          else
+            echo "No changes in cask file."
+          fi
