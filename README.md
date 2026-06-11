@@ -44,9 +44,13 @@ This project is built with a strict **local-first and privacy-centric** design:
 
 ## Installation via Homebrew
 
-You can install the macOS companion app directly via Homebrew Cask from the personal tap:
+You can install the macOS companion app directly using Homebrew Cask:
 
 ```bash
+# One-liner install
+brew install --cask choihunchul/tap/codex-menu-bar
+
+# Or tap first, then install
 brew tap choihunchul/tap
 brew install --cask codex-menu-bar
 ```
