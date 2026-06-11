@@ -252,7 +252,7 @@
               updateMenuItemTitle("Checking for Updates...")
           }
 
-          let url = URL(string: "https://api.github.com/repos/hunchulchoi/codex-menu-bar/releases/latest")!
+          let url = URL(string: "https://api.github.com/repos/choihunchul/codex-menu-bar/releases/latest")!
           var request = URLRequest(url: url)
           request.setValue("CodexMenuBar", forHTTPHeaderField: "User-Agent")
           request.timeoutInterval = 10.0

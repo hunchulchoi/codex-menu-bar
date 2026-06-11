@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Menu bar status bridge for Codex companion app.",
   "author": {
-    "name": "hunchulchoi",
+    "name": "choihunchul",
     "email": "support@example.com",
     "url": "https://example.com/"
   },
@@ -21,7 +21,7 @@
     "displayName": "Codex Menu Bar",
     "shortDescription": "Update a local Codex menu bar status indicator.",
     "longDescription": "Codex Menu Bar provides a local MCP status bridge for a macOS menu bar companion app. The companion app watches a local status file and shows running, idle, waiting, message, and error states while Codex works.",
-    "developerName": "hunchulchoi",
+    "developerName": "choihunchul",
     "category": "Productivity",
     "capabilities": [
       "Interactive",

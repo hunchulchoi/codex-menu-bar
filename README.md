@@ -124,7 +124,7 @@ The log database is intentionally not watched by default because it can be noisy
 ## Automatic Updates
 
 The macOS app features an automatic self-updater:
-* **Background Check**: If enabled in settings (defaults to enabled), the app queries the GitHub Releases API (`https://api.github.com/repos/hunchulchoi/codex-menu-bar/releases/latest`) in the background every 12 hours.
+* **Background Check**: If enabled in settings (defaults to enabled), the app queries the GitHub Releases API (`https://api.github.com/repos/choihunchul/codex-menu-bar/releases/latest`) in the background every 12 hours.
 * **Manual Check**: You can manually click "Check for Updates..." in the menu at any time.
 * **Installation**: When a newer version is found, it prompts you to update, downloads the `.dmg` package, mounts it, overwrites the old app bundle, and automatically relaunches itself.
 * **Configuration**: You can toggle this behavior via `Settings...` -> `Auto check for updates`.

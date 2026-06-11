@@ -1,6 +1,6 @@
 # Header Metadata & GitHub Link Integration
 
-This specification details the changes required to display the application version, release date, and developer name (`by choihunchul`) next to the main status title in the Codex Menu Bar, and integrate the GitHub repository link `https://github.com/hunchulchoi/codex-menu-bar`.
+This specification details the changes required to display the application version, release date, and developer name (`by choihunchul`) next to the main status title in the Codex Menu Bar, and integrate the GitHub repository link `https://github.com/choihunchul/codex-menu-bar`.
 
 ## Proposed Approaches
 
@@ -8,7 +8,7 @@ We propose the following approaches to address the requirements:
 
 ### Approach 1: Clickable Status Header with Metadata (Recommended)
 * **Metadata in Header**: The header menu item (index 0) dynamically shows `[Status Title] v[Version] ([Release Date]) by choihunchul`.
-* **GitHub Link**: Make the header menu item clickable. Clicking it will open `https://github.com/hunchulchoi/codex-menu-bar` in the user's default browser.
+* **GitHub Link**: Make the header menu item clickable. Clicking it will open `https://github.com/choihunchul/codex-menu-bar` in the user's default browser.
 * **Dedicated Menu Item**: To ensure the link is highly discoverable, we also add a dedicated menu item `GitHub Repository...` in the lower section of the menu (above `Settings...`).
 
 ### Approach 2: Static Status Header + Dedicated Menu Item Only
@@ -67,5 +67,5 @@ We will also update `install-app.mjs` to dynamically read version arguments or d
 2. Run `node scripts/install-app.mjs 1.0.5` to package, install, and launch the menu bar app.
 3. Open the menu bar app and verify:
    * Header item displays: `Codex Menu Bar v1.0.5 (2026-06-05) by choihunchul`.
-   * Clicking the header item opens the browser to `https://github.com/hunchulchoi/codex-menu-bar`.
+   * Clicking the header item opens the browser to `https://github.com/choihunchul/codex-menu-bar`.
    * A new menu item `GitHub Repository...` is visible and also opens the same URL.

@@ -133,7 +133,7 @@ Add these methods to the class `CodexMenuBarApp`:
     }
 
     @objc private func openGitHub() {
-        if let url = URL(string: "https://github.com/hunchulchoi/codex-menu-bar") {
+        if let url = URL(string: "https://github.com/choihunchul/codex-menu-bar") {
             NSWorkspace.shared.open(url)
         }
     }

@@ -2798,7 +2798,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openGitHub() {
-        if let url = URL(string: "https://github.com/hunchulchoi/codex-menu-bar") {
+        if let url = URL(string: "https://github.com/choihunchul/codex-menu-bar") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -3021,7 +3021,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             updateMenuItemTitle("Checking for Updates...")
         }
 
-        let url = URL(string: "https://api.github.com/repos/hunchulchoi/codex-menu-bar/releases/latest")!
+        let url = URL(string: "https://api.github.com/repos/choihunchul/codex-menu-bar/releases/latest")!
         var request = URLRequest(url: url)
         request.setValue("CodexMenuBar", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 10.0
