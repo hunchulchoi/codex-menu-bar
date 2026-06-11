@@ -152,3 +152,12 @@ The macOS app features an automatic self-updater:
 ## Current Limitation
 
 Codex does not currently expose a stable public lifecycle event stream to local plugins. This project combines an explicit status bridge with a lightweight local activity watcher.
+
+## CI/CD & Auto-Deployment to Homebrew Tap
+
+This repository has GitHub Actions workflows configured to automate building and publishing:
+
+1. **Tag Push (`v*`) / Manual Release**:
+   - Compiles the macOS companion app, builds the `.dmg` package, and uploads it to GitHub Releases.
+2. **Cask Publishing**:
+   - On successful completion of the release workflow, the Cask publisher automatically downloads the DMG, calculates the sha256, updates the Cask file in the personal tap repository (`choihunchul/homebrew-tap`), and pushes the changes.
