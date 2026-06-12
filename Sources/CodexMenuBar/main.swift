@@ -1683,6 +1683,18 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     private var availableUpdateURL: URL?
     private var updateCheckTimer: Timer?
 
+    // Last drawn state cache
+    private var lastDrawnStatus: String?
+    private var lastDrawnIsRecentlyCompleted: Bool?
+    private var lastDrawnFrameIndex: Int?
+    private var lastDrawnFiveHourUsagePercent: Double?
+    private var lastDrawnWeeklyUsagePercent: Double?
+    private var lastDrawnAgActive: Bool?
+    private var lastDrawnAgStatus: String?
+    private var lastDrawnCursorActive: Bool?
+    private var lastDrawnCursorStatus: String?
+    private var lastDrawnHasUpdate: Bool?
+
     // Shared Reader Instances
     private lazy var limitStateReader = LimitStateReader(codexHome: codexHome)
     private lazy var cursorActivityReader = CursorActivityReader(cursorHome: cursorHome)
@@ -2446,19 +2458,50 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         let agStatus = settings.antigravityWatchEnabled ? currentPayload?.antigravity?.status : nil
         let cursorActive = settings.cursorWatchEnabled
             && currentCursorSnapshot.isActive(activeWindowSeconds: settings.activeWindowSeconds, now: now)
+        let isCompleted = isRecentlyCompleted()
+        let fiveHourPercent = currentLimitState.primary?.usedPercent
+        let weeklyPercent = currentLimitState.secondary?.usedPercent
+        let cursorStatus = cursorActive ? "running" : nil
+        let hasUpdate = availableUpdateVersion != nil
 
-        // AGY & Cursor 상태를 렌더러에 전달 → 이미지 안에 보라색/청록색 점으로 표시
+        // Check if visual state has changed
+        if lastDrawnStatus == status,
+           lastDrawnIsRecentlyCompleted == isCompleted,
+           lastDrawnFrameIndex == frameIndex,
+           lastDrawnFiveHourUsagePercent == fiveHourPercent,
+           lastDrawnWeeklyUsagePercent == weeklyPercent,
+           lastDrawnAgActive == agActive,
+           lastDrawnAgStatus == agStatus,
+           lastDrawnCursorActive == cursorActive,
+           lastDrawnCursorStatus == cursorStatus,
+           lastDrawnHasUpdate == hasUpdate {
+            // No change in visual state, skip redraw!
+            return
+        }
+        
+        // Cache the new visual state
+        lastDrawnStatus = status
+        lastDrawnIsRecentlyCompleted = isCompleted
+        lastDrawnFrameIndex = frameIndex
+        lastDrawnFiveHourUsagePercent = fiveHourPercent
+        lastDrawnWeeklyUsagePercent = weeklyPercent
+        lastDrawnAgActive = agActive
+        lastDrawnAgStatus = agStatus
+        lastDrawnCursorActive = cursorActive
+        lastDrawnCursorStatus = cursorStatus
+        lastDrawnHasUpdate = hasUpdate
+
         let iconImage = menuIconRenderer.image(
             status: status,
-            isRecentlyCompleted: isRecentlyCompleted(),
+            isRecentlyCompleted: isCompleted,
             frameIndex: frameIndex,
-            fiveHourUsagePercent: currentLimitState.primary?.usedPercent,
-            weeklyUsagePercent: currentLimitState.secondary?.usedPercent,
+            fiveHourUsagePercent: fiveHourPercent,
+            weeklyUsagePercent: weeklyPercent,
             agActive: agActive,
             agStatus: agStatus,
             cursorActive: cursorActive,
-            cursorStatus: cursorActive ? "running" : nil,
-            hasUpdate: availableUpdateVersion != nil
+            cursorStatus: cursorStatus,
+            hasUpdate: hasUpdate
         )
         if let button = statusItem.button {
             button.image = iconImage
