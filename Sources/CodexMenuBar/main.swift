@@ -1685,6 +1685,8 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
 
     // Last drawn state cache
     private var lastDrawnStatus: String?
+    private var lastDrawnDetail: String?
+    private var lastDrawnAgActiveConversationCount: Int?
     private var lastDrawnIsRecentlyCompleted: Bool?
     private var lastDrawnFrameIndex: Int?
     private var lastDrawnFiveHourUsagePercent: Double?
@@ -2463,11 +2465,16 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         let weeklyPercent = currentLimitState.secondary?.usedPercent
         let cursorStatus = cursorActive ? "running" : nil
         let hasUpdate = availableUpdateVersion != nil
+        let detail = currentPayload?.detail ?? ""
+        let agCount = currentAntigravitySnapshot.activeConversationCount
+        let isAnimating = shouldAnimateMenuBarIcon()
 
         // Check if visual state has changed
         if lastDrawnStatus == status,
+           lastDrawnDetail == detail,
+           lastDrawnAgActiveConversationCount == agCount,
            lastDrawnIsRecentlyCompleted == isCompleted,
-           lastDrawnFrameIndex == frameIndex,
+           (!isAnimating || lastDrawnFrameIndex == frameIndex),
            lastDrawnFiveHourUsagePercent == fiveHourPercent,
            lastDrawnWeeklyUsagePercent == weeklyPercent,
            lastDrawnAgActive == agActive,
@@ -2481,6 +2488,8 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         
         // Cache the new visual state
         lastDrawnStatus = status
+        lastDrawnDetail = detail
+        lastDrawnAgActiveConversationCount = agCount
         lastDrawnIsRecentlyCompleted = isCompleted
         lastDrawnFrameIndex = frameIndex
         lastDrawnFiveHourUsagePercent = fiveHourPercent
