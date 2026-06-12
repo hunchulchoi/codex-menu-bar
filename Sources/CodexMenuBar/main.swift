@@ -1656,6 +1656,8 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     private var isRefreshingLimits = false
     private var manualPayload: StatusPayload?
     private var effectiveSource = "auto"
+    private var cachedPayloadDate: Date?
+    private var cachedPayload: StatusPayload?
     private var latestCodexActivity: Date?
     private var autoStartedAt: Date?
     private var settingsWindow: NSWindow?
@@ -2032,10 +2034,25 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     private func readPayload() -> StatusPayload? {
-        guard let data = try? Data(contentsOf: statusFile) else {
+        guard let values = try? statusFile.resourceValues(forKeys: [.contentModificationDateKey]),
+              let modDate = values.contentModificationDate else {
+            cachedPayloadDate = nil
+            cachedPayload = nil
             return nil
         }
-        return try? decoder.decode(StatusPayload.self, from: data)
+        
+        if let cachedDate = cachedPayloadDate, let cached = cachedPayload, modDate == cachedDate {
+            return cached
+        }
+        
+        guard let data = try? Data(contentsOf: statusFile),
+              let decoded = try? decoder.decode(StatusPayload.self, from: data) else {
+            return nil
+        }
+        
+        cachedPayloadDate = modDate
+        cachedPayload = decoded
+        return decoded
     }
 
     private func readSettings() -> AppSettings {
