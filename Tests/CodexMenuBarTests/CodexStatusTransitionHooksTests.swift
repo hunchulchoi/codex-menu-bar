@@ -16,26 +16,6 @@ struct CodexStatusTransitionHooksTests {
         #expect(!hooks.shouldSuppressAutoActive(at: start.addingTimeInterval(11)))
     }
 
-    @Test("Waiting status does not trigger the completion cooldown")
-    func waitingStatusDoesNotTriggerCompletionCooldown() {
-        let hooks = CodexStatusTransitionHooks(completedCooldown: 10)
-        let start = Date(timeIntervalSince1970: 1_715_866_800)
-
-        #expect(hooks.recordResolvedStatus("running", at: start) == .onRunning)
-        #expect(hooks.recordResolvedStatus("waiting", at: start.addingTimeInterval(1)) == .onWaiting)
-
-        #expect(!hooks.shouldSuppressAutoActive(at: start.addingTimeInterval(5)))
-    }
-
-    @Test("Approval status exposes hook name")
-    func approvalStatusExposesHookName() {
-        let hooks = CodexStatusTransitionHooks(completedCooldown: 10)
-        let start = Date(timeIntervalSince1970: 1_715_866_800)
-
-        #expect(hooks.recordResolvedStatus("running", at: start) == .onRunning)
-        #expect(hooks.recordResolvedStatus("awaiting approval", at: start.addingTimeInterval(1)) == .onApprovalNeeded)
-    }
-
     @Test("Thinking and running command statuses expose the running hook")
     func thinkingAndRunningCommandExposeRunningHook() {
         let hooks = CodexStatusTransitionHooks(completedCooldown: 10)
@@ -43,14 +23,6 @@ struct CodexStatusTransitionHooksTests {
 
         #expect(hooks.recordResolvedStatus("thinking", at: start) == .onRunning)
         #expect(hooks.recordResolvedStatus("running_command", at: start.addingTimeInterval(1)) == nil)
-    }
-
-    @Test("Completed status exposes the completed hook")
-    func completedStatusExposesCompletedHook() {
-        let hooks = CodexStatusTransitionHooks(completedCooldown: 10)
-        let start = Date(timeIntervalSince1970: 1_715_866_800)
-
-        #expect(hooks.recordResolvedStatus("completed", at: start) == .onCompleted)
     }
 
     @Test("Latest runtime signal resolves to the newest meaningful status")
@@ -65,7 +37,7 @@ struct CodexStatusTransitionHooksTests {
             errorAt: nil
         )
 
-        #expect(codexResolvedRuntimeStatus(from: snapshot) == .awaitingApproval)
+        #expect(codexResolvedRuntimeStatus(from: snapshot) == .idle)
     }
 
     @Test("Runtime signal parser recognizes output item events")
@@ -100,7 +72,7 @@ struct CodexStatusTransitionHooksTests {
         #expect(snapshot.runningAt == start)
         #expect(snapshot.completedAt == start.addingTimeInterval(1))
         #expect(snapshot.approvalAt == start.addingTimeInterval(2))
-        #expect(codexResolvedRuntimeStatus(from: snapshot) == .awaitingApproval)
+        #expect(codexResolvedRuntimeStatus(from: snapshot) == .idle)
     }
 
     @Test("Runtime signal dates preserve nanosecond ordering")
@@ -117,7 +89,7 @@ struct CodexStatusTransitionHooksTests {
         )
 
         #expect(completed > running)
-        #expect(codexResolvedRuntimeStatus(from: snapshot) == .completed)
+        #expect(codexResolvedRuntimeStatus(from: snapshot) == .idle)
     }
 
     @Test("Codex app activation can acknowledge older attention statuses")
@@ -125,9 +97,7 @@ struct CodexStatusTransitionHooksTests {
         let statusAt = Date(timeIntervalSince1970: 1_779_027_986)
         let acknowledgedAt = statusAt.addingTimeInterval(1)
 
-        #expect(codexMenuBarStatusCanBeAcknowledged(.completed))
-        #expect(codexMenuBarStatusCanBeAcknowledged(.awaitingApproval))
-        #expect(codexMenuBarStatusCanBeAcknowledged(.error))
+        #expect(!codexMenuBarStatusCanBeAcknowledged(.idle))
         #expect(!codexMenuBarStatusCanBeAcknowledged(.running))
         #expect(codexMenuBarAttentionStatusIsAcknowledged(statusAt: statusAt, acknowledgedAt: acknowledgedAt))
         #expect(!codexMenuBarAttentionStatusIsAcknowledged(statusAt: acknowledgedAt, acknowledgedAt: statusAt))
@@ -139,12 +109,6 @@ struct CodexStatusTransitionHooksTests {
         let acknowledgedAt = referenceDate.addingTimeInterval(1)
         let now = referenceDate.addingTimeInterval(10)
 
-        #expect(codexMenuBarShouldShowRecentCompletion(
-            status: .idle,
-            referenceDate: referenceDate,
-            acknowledgedAt: nil,
-            now: now
-        ))
         #expect(!codexMenuBarShouldShowRecentCompletion(
             status: .idle,
             referenceDate: referenceDate,

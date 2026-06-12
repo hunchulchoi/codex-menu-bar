@@ -15,12 +15,6 @@ func codexNormalizedStatus(_ status: String) -> String {
         .lowercased()
         .replacingOccurrences(of: "-", with: "_")
 
-    if normalized.contains("approval") {
-        return "awaiting approval"
-    }
-    if normalized.contains("complete") || normalized.contains("done") {
-        return "completed"
-    }
     if normalized.contains("thinking")
         || normalized.contains("running_command")
         || normalized.contains("running command")
@@ -29,33 +23,18 @@ func codexNormalizedStatus(_ status: String) -> String {
     {
         return "running"
     }
-    if normalized.contains("waiting") {
-        return "waiting"
-    }
-    if normalized.contains("message") {
-        return "message"
-    }
-    if normalized.contains("fail") {
-        return "error"
-    }
-    if normalized.contains("error") {
-        return "error"
-    }
-    if normalized == "idle" {
-        return "idle"
-    }
 
-    return normalized.replacingOccurrences(of: "_", with: " ")
+    return "idle"
 }
 
 func codexResolvedRuntimeStatus(from snapshot: CodexRuntimeSignalSnapshot) -> CodexStatusKind? {
     let candidates: [(CodexStatusKind, Date)] = [
         snapshot.runningAt.map { (.running, $0) },
-        snapshot.approvalAt.map { (.awaitingApproval, $0) },
-        snapshot.completedAt.map { (.completed, $0) },
-        snapshot.waitingAt.map { (.waiting, $0) },
-        snapshot.messageAt.map { (.message, $0) },
-        snapshot.errorAt.map { (.error, $0) }
+        snapshot.approvalAt.map { (.idle, $0) },
+        snapshot.completedAt.map { (.idle, $0) },
+        snapshot.waitingAt.map { (.idle, $0) },
+        snapshot.messageAt.map { (.idle, $0) },
+        snapshot.errorAt.map { (.idle, $0) }
     ].compactMap { $0 }
 
     return candidates.max(by: { $0.1 < $1.1 })?.0
@@ -64,11 +43,6 @@ func codexResolvedRuntimeStatus(from snapshot: CodexRuntimeSignalSnapshot) -> Co
 enum CodexStatusKind: String {
     case running
     case idle
-    case waiting
-    case message
-    case error
-    case awaitingApproval = "awaiting approval"
-    case completed
 
     init(status: String) {
         self = CodexStatusKind(rawValue: codexNormalizedStatus(status)) ?? .idle
@@ -78,10 +52,6 @@ enum CodexStatusKind: String {
 enum CodexStatusHookName: String, CaseIterable {
     case onRunning
     case onCompleted
-    case onWaiting
-    case onMessage
-    case onApprovalNeeded
-    case onError
 }
 
 final class CodexStatusTransitionHooks {
@@ -110,7 +80,7 @@ final class CodexStatusTransitionHooks {
             return nil
         }
 
-        if lastStatus == .running, current == .idle || current == .completed {
+        if lastStatus == .running, current == .idle {
             suppressAutoActiveUntil = now.addingTimeInterval(completedCooldown)
         }
 
@@ -118,16 +88,6 @@ final class CodexStatusTransitionHooks {
         case .running:
             return .onRunning
         case .idle:
-            return .onCompleted
-        case .waiting:
-            return .onWaiting
-        case .message:
-            return .onMessage
-        case .error:
-            return .onError
-        case .awaitingApproval:
-            return .onApprovalNeeded
-        case .completed:
             return .onCompleted
         }
     }

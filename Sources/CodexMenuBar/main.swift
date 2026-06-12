@@ -129,12 +129,7 @@ func codexMenuBarIsCodexApplication(bundleIdentifier: String?, localizedName: St
 }
 
 func codexMenuBarStatusCanBeAcknowledged(_ kind: CodexStatusKind) -> Bool {
-    switch kind {
-    case .completed, .awaitingApproval, .error:
-        return true
-    case .running, .idle, .waiting, .message:
-        return false
-    }
+    return false
 }
 
 func codexMenuBarAttentionStatusIsAcknowledged(statusAt: Date?, acknowledgedAt: Date?) -> Bool {
@@ -150,16 +145,7 @@ func codexMenuBarShouldShowRecentCompletion(
     acknowledgedAt: Date?,
     now: Date = Date()
 ) -> Bool {
-    if status == .completed {
-        return !codexMenuBarAttentionStatusIsAcknowledged(statusAt: referenceDate ?? now, acknowledgedAt: acknowledgedAt)
-    }
-    guard status == .idle, let referenceDate else {
-        return false
-    }
-    if codexMenuBarAttentionStatusIsAcknowledged(statusAt: referenceDate, acknowledgedAt: acknowledgedAt) {
-        return false
-    }
-    return now.timeIntervalSince(referenceDate) <= 300
+    return false
 }
 
 struct LimitBucket {
@@ -2296,28 +2282,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         let manualKind = CodexStatusKind(status: manualStatus ?? "idle")
         if let manual {
             switch manualKind {
-            case .running, .waiting, .message, .error, .awaitingApproval, .completed:
-                if codexMenuBarStatusCanBeAcknowledged(manualKind),
-                   codexMenuBarAttentionStatusIsAcknowledged(
-                       statusAt: manualUpdatedDate(manual),
-                       acknowledgedAt: attentionAcknowledgedAt
-                   )
-                {
-                    effectiveSource = "manual"
-                    let resolved = StatusPayload(
-                        status: "idle",
-                        detail: "Ready",
-                        thread: manual.thread,
-                        progress: manual.progress,
-                        updatedAt: manual.updatedAt ?? isoFormatter.string(from: now),
-                        startedAt: nil,
-                        model: manual.model,
-                        contextWindow: manual.contextWindow,
-                        tokenUsage: manual.tokenUsage
-                    )
-                    _ = statusTransitionHooks.recordResolvedStatus(resolved.status ?? "idle", at: now)
-                    return resolved
-                }
+            case .running:
                 effectiveSource = "manual"
                 let resolvedStatus = canonicalStatusText(for: manualKind)
                 let manualDetail = manual.detail ?? ""
@@ -2431,16 +2396,6 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             return "running"
         case .idle:
             return "idle"
-        case .waiting:
-            return "waiting"
-        case .message:
-            return "message"
-        case .error:
-            return "error"
-        case .awaitingApproval:
-            return "awaiting approval"
-        case .completed:
-            return "completed"
         }
     }
 
@@ -2448,16 +2403,6 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         switch status {
         case "running":
             return "Codex is working"
-        case "waiting":
-            return "Codex is waiting for input"
-        case "message":
-            return "Codex has a message"
-        case "error":
-            return "Codex needs attention"
-        case "awaiting approval":
-            return "Codex is awaiting approval"
-        case "completed":
-            return "Codex completed"
         default:
             return "Codex is idle"
         }
@@ -2558,20 +2503,8 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
         let status = currentPayload?.status?.lowercased() ?? "idle"
         let iconKind = codexMenuBarIconKind(status: status, isRecentlyCompleted: isRecentlyCompleted())
         
-        // Spaceship floats/streaks when running, or has blinking dots when waiting
-        if iconKind == .running || iconKind == .waiting {
-            return true
-        }
-
-        // Completion sparkle blinks
-        if codexMenuBarTopRightSparkleShouldBlink(status: status, isRecentlyCompleted: isRecentlyCompleted()) {
-            return true
-        }
-
-        // Check if AGY status requires blinking (awaiting approval)
-        if settings.antigravityWatchEnabled,
-           let agStatus = currentPayload?.antigravity?.status?.lowercased(),
-           agStatus == "awaiting approval" || agStatus == "approval_required" {
+        // Spaceship floats/streaks when running
+        if iconKind == .running {
             return true
         }
 
@@ -2669,22 +2602,30 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
             let agPayload = currentPayload?.antigravity
             let agStatus = agPayload?.status?.lowercased() ?? "idle"
             
-            if agStatus == "running" || (agStatus == "idle" && agActive) {
+            let normalizedAgStatus: String
+            if agStatus.contains("thinking")
+                || agStatus.contains("running_command")
+                || agStatus.contains("running command")
+                || agStatus.contains("working")
+                || agStatus == "running"
+            {
+                normalizedAgStatus = "running"
+            } else {
+                normalizedAgStatus = "idle"
+            }
+            
+            if normalizedAgStatus == "running" || agActive {
                 let count = currentAntigravitySnapshot.activeConversationCount
                 agStatusText = "● Running (\(count) active)"
-            } else if agStatus == "awaiting approval" {
-                agStatusText = "🟡 Awaiting Approval"
-            } else if agStatus == "completed" {
-                agStatusText = "🟢 Completed"
             } else if let lastDate = currentAntigravitySnapshot.lastActivityDate {
                 let seconds = max(0, Int(now.timeIntervalSince(lastDate)))
-                agStatusText = "○ Idle (last: \(formatActivityAgeShort(seconds)))"
+                agStatusText = "Idle (\(seconds)s ago)"
             } else {
-                agStatusText = "○ No activity detected"
+                agStatusText = "Idle"
             }
             menu.item(at: 15)?.title = "AGY: \(agStatusText)"
             
-            if let detail = agPayload?.detail, !detail.isEmpty, agStatus != "idle" {
+            if let detail = agPayload?.detail, !detail.isEmpty, normalizedAgStatus != "idle" {
                 menu.item(at: 16)?.title = "AGY Detail: \(detail)"
             } else {
                 let agActivityText: String
@@ -2837,28 +2778,10 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     private func updateStatusPopover(for status: String) {
-        let detail = currentPayload?.detail ?? ""
-        guard let presentation = statusPopoverPresentation(status: status, detail: detail) else {
-            lastPopupStatus = nil
-            if statusPopover.isShown {
-                statusPopover.performClose(nil)
-            }
-            return
+        if statusPopover.isShown {
+            statusPopover.performClose(nil)
         }
-
-        guard lastPopupStatus != status || !statusPopover.isShown else {
-            return
-        }
-        lastPopupStatus = status
-        statusPopupViewController.update(presentation: presentation)
-        guard let button = statusItem.button else {
-            return
-        }
-
-        statusPopover.contentSize = presentation.contentSize
-        if !statusPopover.isShown {
-            statusPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        }
+        lastPopupStatus = nil
     }
 
     private func isRecentlyCompleted() -> Bool {

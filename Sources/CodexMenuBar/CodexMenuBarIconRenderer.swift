@@ -4,38 +4,19 @@ import Foundation
 enum CodexMenuBarIconKind {
     case idle
     case running
-    case waiting
-    case complete
 }
 
 func codexMenuBarIconKind(status: String, isRecentlyCompleted: Bool) -> CodexMenuBarIconKind {
-    if isRecentlyCompleted {
-        return .complete
-    }
-
     switch CodexStatusKind(status: status) {
     case .running:
         return .running
-    case .waiting, .message, .error, .awaitingApproval:
-        return .waiting
-    case .completed:
-        return .complete
     case .idle:
         return .idle
     }
 }
 
 func codexMenuBarTopRightSparkleShouldBlink(status: String, isRecentlyCompleted: Bool) -> Bool {
-    if isRecentlyCompleted {
-        return true
-    }
-
-    switch CodexStatusKind(status: status) {
-    case .completed, .awaitingApproval, .error:
-        return true
-    case .running, .idle, .waiting, .message:
-        return false
-    }
+    return false
 }
 
 func codexMenuBarIconColor(status: String, isRecentlyCompleted: Bool) -> NSColor {
@@ -161,7 +142,7 @@ final class CodexMenuBarIconRenderer {
         case "awaiting approval", "approval_required":
             dotColor = NSColor.systemOrange
             shouldBlink = true
-          case "completed", "complete", "done":
+        case "completed", "complete", "done":
             dotColor = NSColor.systemGreen
         case "running", "thinking", "working":
             dotColor = defaultColor
@@ -226,10 +207,6 @@ final class CodexMenuBarIconRenderer {
         case .running:
             drawRunningMotionStreaks(color: color, frameIndex: frameIndex)
             drawBaseSpaceship(color: color, dotFrameIndex: frameIndex, verticalOffset: codexMenuBarRunningFloatOffset(frameIndex: frameIndex))
-        case .waiting:
-            drawBaseSpaceship(color: color, dotFrameIndex: frameIndex)
-        case .complete:
-            drawBaseSpaceship(color: color, dotFrameIndex: nil, blinkingDotIndex: nil, verticalOffset: 0)
         }
 
         if showTopRightSparkle {
