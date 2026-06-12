@@ -28,7 +28,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.tag }}"
           else
-            TAG=$(curl -fsSL https://api.github.com/repos/choihunchul/codex-menu-bar/releases/latest | jq -r .tag_name)
+            TAG=$(curl -fsSL -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
