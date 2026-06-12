@@ -2525,26 +2525,22 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
 
     private func shouldAnimateMenuBarIcon() -> Bool {
         let status = currentPayload?.status?.lowercased() ?? "idle"
-        if codexMenuBarIconKind(status: status, isRecentlyCompleted: isRecentlyCompleted()) != .idle {
+        let iconKind = codexMenuBarIconKind(status: status, isRecentlyCompleted: isRecentlyCompleted())
+        
+        // Spaceship floats/streaks when running, or has blinking dots when waiting
+        if iconKind == .running || iconKind == .waiting {
             return true
         }
 
-        let now = Date()
-        let agActive = settings.antigravityWatchEnabled
-            && currentAntigravitySnapshot.isActive(activeWindowSeconds: settings.activeWindowSeconds, now: now)
-        if agActive {
+        // Completion sparkle blinks
+        if codexMenuBarTopRightSparkleShouldBlink(status: status, isRecentlyCompleted: isRecentlyCompleted()) {
             return true
         }
 
+        // Check if AGY status requires blinking (awaiting approval)
         if settings.antigravityWatchEnabled,
            let agStatus = currentPayload?.antigravity?.status?.lowercased(),
-           agStatus == "awaiting approval" || agStatus == "running" {
-            return true
-        }
-        
-        let cursorActive = settings.cursorWatchEnabled
-            && currentCursorSnapshot.isActive(activeWindowSeconds: settings.activeWindowSeconds, now: now)
-        if cursorActive {
+           agStatus == "awaiting approval" || agStatus == "approval_required" {
             return true
         }
 
@@ -2939,7 +2935,7 @@ final class CodexMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     private var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.9"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.10"
     }
 
     private var buildDate: String {
